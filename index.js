@@ -1,27 +1,31 @@
-import express from 'express';
-import bodyParser from 'body-parser';
-import mongoose from 'mongoose';
-import cors from 'cors';
 import dotenv from 'dotenv';
-// import movieRoutes from './routes/movies.js';
-// import userRoutes from './routes/users.js';
+import express from 'express';
+import connectDB from './config/db.js';
+import cors from 'cors';
+import cookieParser from 'cookie-parser';
 
-const app = express();
+// routes
+import userRoutes from './routes/user.js';
+import exerciseRoutes from './routes/exercise.js';
+
 dotenv.config();
 
+connectDB();
 
-app.use(bodyParser.json({limit: "30mb", extended: true}));
-app.use(bodyParser.urlencoded({limit: "30mb", extended: true}));
-app.use(cors());
+const app = express();
+
+app.use(cookieParser())
+app.use(cors({
+    credentials: true,
+    origin: ['http://localhost:4200']
+}));
+
+app.use(express.json());
 
 // app.use('/movies', movieRoutes);
-// app.use('/users', userRoutes);
-
+app.use('/users', userRoutes);
+app.use('/exercise-group', exerciseRoutes);
 
 const PORT = process.env.PORT || 5000;
 
-mongoose.connect(process.env.CONNECTION_URL, { useNewUrlParser: true, useUnifiedTopology: true })
-    .then(() => app.listen(PORT, () => console.log(`Server running on port: ˘${PORT}`)))
-    .catch((error) => console.log(error.message));
-
-// mongoose.set('useFindAndModify', false);
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
