@@ -9,11 +9,17 @@ export const signin = async (req, res) => {
     try {
         const existingUser = await User.findOne({email});
 
-        if(!existingUser) return res.status(404).json({message: "User doesn't exist"});
+        if(!existingUser) return res.status(200).json({
+            message: "User doesn't exist",
+            success: false
+        });
 
         const isPasswordCorrect = await bcrypt.compare(password, existingUser.password);
 
-        if(!isPasswordCorrect) return res.status(400).json({message: "Invalid credetnials."});
+        if(!isPasswordCorrect) return res.status(200).json({
+            message: "Invalid credetnials.",
+            success: false
+        });
 
         const token = jwt.sign({ _id: existingUser._id}, 'test', { expiresIn: "1h"});
 
@@ -23,7 +29,9 @@ export const signin = async (req, res) => {
         })
 
         res.status(200).json({ success: true,
-                               message: 'Login success'});
+                               message: 'Login success',
+                               result: existingUser,
+                               token});
 
 
     } catch (error) {
@@ -38,9 +46,15 @@ export const signup = async (req, res) => {
     try {
         const existingUser = await User.findOne({email});
 
-        if(existingUser) return res.status(400).josn({message: "User already exists"});
+        if(existingUser) return res.status(200).json({
+            message: "User already exists",
+            success: false
+        });
 
-        if( password !== confirmPassword) return res.status(400).json({ message: "Passwords dont match."});
+        if( password !== confirmPassword) return res.status(200).json({ 
+            message: "Passwords dont match.",
+            success: false
+        });
 
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
@@ -51,8 +65,12 @@ export const signup = async (req, res) => {
         
         const token = jwt.sign({ _id: result._id}, 'test', { expiresIn: "1h"});
 
-
-        res.status(200).json({ result: result, token});
+        console.log(result);
+        res.status(200).json({ 
+            result: result,
+             token: token,
+            success: true,
+            message: 'Registration success'});
 
     } catch (error) {
         console.log(error);
@@ -62,10 +80,19 @@ export const signup = async (req, res) => {
 }
 
 export const signout = async (req, res) => {
-    res.cookie('jwt', '', {maxAge: 0});
+    try {
+        res.cookie('jwt', '', {maxAge: 0});
 
-    res.send({
-        success: true,
-        message: 'Logged out successfully!'
-    })
+        res.send({
+            success: true,
+            message: 'Logged out successfully!'
+        })
+    } catch(err) {
+        console.log(err);
+        res.send({
+            success: false,
+            message: 'Something went wrong!'
+        })
+    }
+    
 }
