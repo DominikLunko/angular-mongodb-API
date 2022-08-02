@@ -1,98 +1,312 @@
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
+import User_analytics from "../models/analitics.js";
+import Nutrient from "../models/nutrients.js";
+import User from "../models/user.js";
 
-import User from '../models/user.js';
+// AUTH
 
 export const signin = async (req, res) => {
-    const { email, password } = req.body;
+  const { email, password } = req.body;
 
-    try {
-        const existingUser = await User.findOne({email});
+  try {
+    const existingUser = await User.findOne({ email });
 
-        if(!existingUser) return res.status(200).json({
-            message: "User doesn't exist",
-            success: false
-        });
+    if (!existingUser)
+      return res.status(200).json({
+        message: "User doesn't exist",
+        success: false,
+      });
 
-        const isPasswordCorrect = await bcrypt.compare(password, existingUser.password);
+    const isPasswordCorrect = await bcrypt.compare(
+      password,
+      existingUser.password
+    );
 
-        if(!isPasswordCorrect) return res.status(200).json({
-            message: "Invalid credetnials.",
-            success: false
-        });
+    if (!isPasswordCorrect)
+      return res.status(200).json({
+        message: "Invalid credetnials.",
+        success: false,
+      });
 
-        const token = jwt.sign({ _id: existingUser._id}, 'test', { expiresIn: "1h"});
+    const token = jwt.sign({ _id: existingUser._id }, "test", {
+      expiresIn: "1h",
+    });
 
-        res.cookie('jwt', token, {
-            httpOnly: true,
-            maxAge: 60 * 60 * 1000 // 1 hour
-        })
+    res.cookie("jwt", token, {
+      httpOnly: true,
+      maxAge: 60 * 60 * 1000, // 1 hour
+    });
 
-        res.status(200).json({ success: true,
-                               message: 'Login success',
-                               result: existingUser,
-                               token});
-
-
-    } catch (error) {
-        res.status(500).json({message: 'Something went wrong'});
-    }
-}
+    res.status(200).json({
+      success: true,
+      message: "Login success",
+      result: existingUser,
+      token,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Something went wrong" });
+  }
+};
 
 export const signup = async (req, res) => {
-    const { email, password, firstName, lastName, confirmPassword} = req.body;
-    console.log(req.body);
+  const { email, password, firstName, lastName, confirmPassword } = req.body;
+  console.log(req.body);
 
-    try {
-        const existingUser = await User.findOne({email});
+  try {
+    const existingUser = await User.findOne({ email });
 
-        if(existingUser) return res.status(200).json({
-            message: "User already exists",
-            success: false
-        });
+    if (existingUser)
+      return res.status(200).json({
+        message: "User already exists",
+        success: false,
+      });
 
-        if( password !== confirmPassword) return res.status(200).json({ 
-            message: "Passwords dont match.",
-            success: false
-        });
+    if (password !== confirmPassword)
+      return res.status(200).json({
+        message: "Passwords dont match.",
+        success: false,
+      });
 
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
-        const result = await User.create({ email, password: hashedPassword, name: `${firstName} ${lastName}`});
+    const result = await User.create({
+      email,
+      password: hashedPassword,
+      name: `${firstName} ${lastName}`,
+    });
+    const newAnalytics = new User_analytics({ userId: result._id });
+    await newAnalytics.save();
 
-        // const {password, ...data} = await result.toJSON();
-        
-        const token = jwt.sign({ _id: result._id}, 'test', { expiresIn: "1h"});
+    // const {password, ...data} = await result.toJSON();
 
-        console.log(result);
-        res.status(200).json({ 
-            result: result,
-             token: token,
-            success: true,
-            message: 'Registration success'});
+    const token = jwt.sign({ _id: result._id }, "test", { expiresIn: "1h" });
 
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({message: 'Something went wrong'});
-
-    }
-}
+    console.log(result);
+    res.status(200).json({
+      result: result,
+      token: token,
+      success: true,
+      message: "Registration success",
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Something went wrong" });
+  }
+};
 
 export const signout = async (req, res) => {
-    try {
-        res.cookie('jwt', '', {maxAge: 0});
+  try {
+    res.cookie("jwt", "", { maxAge: 0 });
 
-        res.send({
-            success: true,
-            message: 'Logged out successfully!'
-        })
-    } catch(err) {
-        console.log(err);
-        res.send({
-            success: false,
-            message: 'Something went wrong!'
-        })
+    res.send({
+      success: true,
+      message: "Logged out successfully!",
+    });
+  } catch (err) {
+    console.log(err);
+    res.send({
+      success: false,
+      message: "Something went wrong!",
+    });
+  }
+};
+export const refreshToken = async (req, res) => {
+  const userId = req.userId;
+  try {
+    const existingUser = await User.findOne({ _id: userId });
+
+    if (!existingUser)
+      res.status(200).send({
+        success: false,
+        message: "Refresh error",
+      });
+    res.status(200).send({
+      success: true,
+      message: "Refresh success",
+      user: existingUser,
+    });
+  } catch (err) {
+    console.log(err);
+    res.send({
+      success: false,
+      message: "Something went wrong!",
+    });
+  }
+};
+
+// USER PERSONAL DATA CONTROLLERS
+
+export const updateUser = async (req, res) => {
+  const userId = req.userId;
+  const user = req.body;
+  try {
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(200).send({
+        success: false,
+        message: "No user with that ID",
+      });
     }
-    
-}
+    const updatedUser = await User.findByIdAndUpdate(userId, user, {
+      new: true,
+    });
+    res.status(200).send({
+      success: true,
+      message: "User successfully updated",
+      updatedUser,
+    });
+  } catch (err) {
+    console.log(err);
+    res.send({
+      success: false,
+      message: "Something went wrong!",
+    });
+  }
+};
+
+export const getUserAnalytics = async (req, res) => {
+  try {
+    const analytics = await User_analytics.find({ userId: req.userId });
+    const nutrients = await Nutrient.find({
+      _id: { $in: analytics[0].favourite_nutrients },
+    });
+    if (!analytics) {
+      return res.status(200).send({
+        success: false,
+        message: "No analytics with that userID",
+      });
+    } else {
+      res.status(200).send({
+        success: true,
+        message: "Analytics fetched successfully",
+        nutrients: nutrients,
+        analytics: analytics,
+      });
+    }
+  } catch (err) {
+    console.log(err);
+    res.send({
+      success: false,
+      message: "Something went wrong!",
+    });
+  }
+};
+
+export const saveAnalytics = async (req, res) => {
+  let user_analytics = req.body;
+  user_analytics.userId = req.userId;
+  user_analytics.createdAt = new Date().toISOString();
+  try {
+    /*
+    const existingAnalytics = await User_analytics.find({
+      userId: user_analytics.userId,
+    });
+    if (existingAnalytics.length > 0) {
+    */
+    const updatedAnalytics = await User_analytics.updateOne(
+      { userId: req.userId },
+      user_analytics
+    );
+    res.status(200).send({
+      success: true,
+      message: "User analytics successfully updated",
+      updatedAnalytics,
+    });
+    /*
+    } else {
+      const newAnalytics = new User_analytics({ ...user_analytics });
+      await newAnalytics.save();
+
+      res.status(200).send({
+        success: true,
+        message: "User analytics successfully created",
+        newAnalytics,
+      });
+    }
+    */
+  } catch (err) {
+    console.log(err);
+    res.send({
+      success: false,
+      message: "Something went wrong!",
+    });
+  }
+};
+export const addToFavourite = async (req, res) => {
+  const { nutrientId } = req.params;
+
+  const userAnalytics = await User_analytics.find({ userId: req.userId });
+
+  let favouriteNutrients = [];
+
+  if (userAnalytics[0].favourite_nutrients.length > 0) {
+    favouriteNutrients = userAnalytics[0].favourite_nutrients;
+  }
+  const index = favouriteNutrients.indexOf(nutrientId);
+  if (index == -1) {
+    favouriteNutrients.push(nutrientId);
+  } else {
+    favouriteNutrients = favouriteNutrients.filter(
+      (id) => id !== String(nutrientId)
+    );
+  }
+  const updatedUserAnalytics = await User_analytics.updateOne(
+    { userId: req.userId },
+    { favourite_nutrients: favouriteNutrients }
+  );
+
+  if (updatedUserAnalytics) {
+    res.status(200).json({
+      success: true,
+      message: "Favourite updated successfully!",
+      favouriteNutrientList: favouriteNutrients,
+    });
+  } else {
+    res.status(200).json({
+      success: false,
+      message: "Favourite updated failed!",
+    });
+  }
+};
+
+export const addToDailyCaloryIntake = async (req, res) => {
+  const { calories, todayDate } = req.body;
+  // const checkTodayDate = new Date().toISOString().split("T")[0];
+  try {
+    const analytics = await User_analytics.find({userId: req.userId});
+    let dailyCaloryIntake = [];
+    if (analytics[0].daily_calory_intake.length > 0) {
+      dailyCaloryIntake = analytics[0].daily_calory_intake;
+    }
+    let todayDailyCalories = dailyCaloryIntake.find(item => item.date.toISOString().split('T')[0] == todayDate.split('T')[0]);
+    if (todayDailyCalories) {
+      todayDailyCalories.calories = todayDailyCalories.calories + calories
+    } else {
+      dailyCaloryIntake.push({date: todayDate.split('T')[0], calories: calories})
+    }
+    const updatedUserAnalytics = await User_analytics.updateOne(
+      { userId: req.userId },
+      { daily_calory_intake: dailyCaloryIntake }
+    );
+    if (updatedUserAnalytics) {
+      res.status(200).json({
+        success: true,
+        message: "Daily intake updated successfully!",
+      });
+    } else {
+      res.status(200).json({
+        success: false,
+        message: "Daily intake updated failed!",
+      });
+    }
+
+  } catch (err) {
+    console.log(err);
+    res.send({
+      success: false,
+      message: "Something went wrong!",
+    });
+  }
+};

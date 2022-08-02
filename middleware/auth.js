@@ -23,7 +23,6 @@ const auth = async (req, res, next) => {
             req.userId = claims._id;
             next();
         } else {
-            console.log("ZAPELO")
             res.status(200).send({
                 success: false,
                 message: 'Unauthorized!'
