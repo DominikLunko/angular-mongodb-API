@@ -1,5 +1,7 @@
 import mongoose from "mongoose";
 
+import Workout from "./workout.js";
+
 const userAnalyticsSchema = new mongoose.Schema({
   userId: { type: String },
   ideal_weight: { type: String },
@@ -12,8 +14,12 @@ const userAnalyticsSchema = new mongoose.Schema({
   }],
   healthy_bmi_range: { type: String },
   favourite_nutrients: {
-    type: [String],
+    type: [mongoose.Schema.ObjectId],
     default: [],
+  },
+  workout_plans: {
+    type: [],
+    default: []
   },
   weight_goals: {
     extreme_weight_gain: {

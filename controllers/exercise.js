@@ -1,6 +1,49 @@
 import Exercise from "../models/exercise.js";
 import BodyPart from "../models/bodyPart.js";
 
+/*
+// GET EXERCISE GROUP WITH GROUP AND SLICE
+export const getExerciseGroup = async (req, res) => {
+  const { bodyPart, skip } = req.body;
+  try {
+    const exercisesData = await Exercise.aggregate([
+      { $match: { bodyPart: { $eq: bodyPart } } },
+        {
+          $group: {
+            _id: null,
+            count: { $sum: 1 },
+            results: { $push: "$$CURRENT" },
+          },
+        },
+        {
+          $project: {
+            count: 1,
+            results: { $slice: ["$results", 0, 10] },
+          },
+        },
+    ]);
+    if (exercisesData[0]) {
+      res.status(200).json({
+        message: "Exercises fetch success",
+        success: true,
+        exercisesList: exercisesData[0]
+      });
+    } else {
+      res.status(200).json({
+        message: "No more data to fetch",
+        success: false,
+      });
+    }
+  } catch (error) {
+    res.status(200).json({
+      message: "Something went wrong",
+      success: false,
+    });
+  }
+};
+*/
+
+
 export const getExerciseGroup = async (req, res) => {
   const { bodyPart, skip } = req.body;
   try {

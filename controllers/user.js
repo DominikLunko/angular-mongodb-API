@@ -168,11 +168,43 @@ export const updateUser = async (req, res) => {
 
 export const getUserAnalytics = async (req, res) => {
   try {
+    /*
     const analytics = await User_analytics.find({ userId: req.userId });
     const nutrients = await Nutrient.find({
       _id: { $in: analytics[0].favourite_nutrients },
     });
-    if (!analytics) {
+    */
+    const analytics = await User_analytics.aggregate([
+      {
+        $match: { userId: req.userId },
+      },
+      {
+        $lookup: {
+          from: "nutrients",
+          localField: "favourite_nutrients",
+          foreignField: "_id",
+          as: "joined_favourite_nutrients",
+        },
+      },
+      {
+        $project: {
+          ideal_weight: 1,
+          bmr: 1,
+          bmi: 1,
+          health: 1,
+          daily_calory_intake: 1,
+          workout_plans: 1,
+          healthy_bmi_range: 1,
+          weight_goals: 1,
+          createdAt: 1,
+          joined_favourite_nutrients: {
+            food: 1,
+            _id: 1,
+          },
+        },
+      },
+    ]);
+    if (analytics.length < 1) {
       return res.status(200).send({
         success: false,
         message: "No analytics with that userID",
@@ -181,7 +213,6 @@ export const getUserAnalytics = async (req, res) => {
       res.status(200).send({
         success: true,
         message: "Analytics fetched successfully",
-        nutrients: nutrients,
         analytics: analytics,
       });
     }
@@ -244,12 +275,13 @@ export const addToFavourite = async (req, res) => {
   if (userAnalytics[0].favourite_nutrients.length > 0) {
     favouriteNutrients = userAnalytics[0].favourite_nutrients;
   }
-  const index = favouriteNutrients.indexOf(nutrientId);
+  const index = favouriteNutrients.indexOf(mongoose.Types.ObjectId(nutrientId));
+
   if (index == -1) {
     favouriteNutrients.push(nutrientId);
   } else {
     favouriteNutrients = favouriteNutrients.filter(
-      (id) => id !== String(nutrientId)
+      (id) => String(id) != nutrientId
     );
   }
   const updatedUserAnalytics = await User_analytics.updateOne(
@@ -275,16 +307,21 @@ export const addToDailyCaloryIntake = async (req, res) => {
   const { calories, todayDate } = req.body;
   // const checkTodayDate = new Date().toISOString().split("T")[0];
   try {
-    const analytics = await User_analytics.find({userId: req.userId});
+    const analytics = await User_analytics.find({ userId: req.userId });
     let dailyCaloryIntake = [];
     if (analytics[0].daily_calory_intake.length > 0) {
       dailyCaloryIntake = analytics[0].daily_calory_intake;
     }
-    let todayDailyCalories = dailyCaloryIntake.find(item => item.date.toISOString().split('T')[0] == todayDate.split('T')[0]);
+    let todayDailyCalories = dailyCaloryIntake.find(
+      (item) => item.date.toISOString().split("T")[0] == todayDate.split("T")[0]
+    );
     if (todayDailyCalories) {
-      todayDailyCalories.calories = todayDailyCalories.calories + calories
+      todayDailyCalories.calories = todayDailyCalories.calories + calories;
     } else {
-      dailyCaloryIntake.push({date: todayDate.split('T')[0], calories: calories})
+      dailyCaloryIntake.push({
+        date: todayDate.split("T")[0],
+        calories: calories,
+      });
     }
     const updatedUserAnalytics = await User_analytics.updateOne(
       { userId: req.userId },
@@ -301,7 +338,6 @@ export const addToDailyCaloryIntake = async (req, res) => {
         message: "Daily intake updated failed!",
       });
     }
-
   } catch (err) {
     console.log(err);
     res.send({
@@ -310,3 +346,60 @@ export const addToDailyCaloryIntake = async (req, res) => {
     });
   }
 };
+
+export const saveWorkoutPlan = async (req, res) => {
+  const { workout } = req.body;
+  try {
+     const result = await User_analytics.aggregate([
+      {$match: {userId: req.userId}},
+      {$project: {
+        _id: 0,
+        workout_plans: 1
+      }}
+     ])
+     let workoutPlans = result[0].workout_plans
+     const index = workoutPlans.findIndex(item => item.uniqueId == workout.uniqueId);
+      if (index == -1) {
+        workoutPlans.push(workout);
+      } else {
+        workoutPlans[index] = JSON.parse(JSON.stringify(workout));
+      }
+     await User_analytics.updateOne(
+      { userId: req.userId },
+      {workout_plans: workoutPlans}
+    );
+  
+    res.status(200).json({
+      success: true,
+      message: "Workout saved successfully!",
+    });
+  } catch (error) {
+    res.status(200).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const deleteWorkoutPlan = async (req, res) => {
+  const { workoutId } = req.params;
+  console.log(workoutId);
+
+  const updatedUserAnalytics = await User_analytics.updateOne(
+    { userId: req.userId },
+    { $pull: { workout_plans: { uniqueId: workoutId } } }
+  );
+
+  if (updatedUserAnalytics) {
+    res.status(200).json({
+      success: true,
+      message: "Workout deleted successfully!",
+    });
+  } else {
+    res.status(200).json({
+      success: false,
+      message: "Workout delete failed!",
+    });
+  }
+};
+
