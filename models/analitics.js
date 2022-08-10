@@ -8,18 +8,26 @@ const userAnalyticsSchema = new mongoose.Schema({
   bmr: { type: String },
   bmi: { type: Number },
   health: { type: String },
-  daily_calory_intake: [{
-    date: {type: Date},
-    calories: {type: Number}
-  }],
+  daily_calory_intake: [
+    {
+      date: { type: Date },
+      calories: { type: Number },
+    },
+  ],
   healthy_bmi_range: { type: String },
   favourite_nutrients: {
     type: [mongoose.Schema.ObjectId],
     default: [],
   },
   workout_plans: {
-    type: [],
-    default: []
+    type: [
+      {
+        workoutDays: [],
+        uniqueId: String,
+        title: String,
+      },
+    ],
+    default: [],
   },
   weight_goals: {
     extreme_weight_gain: {
