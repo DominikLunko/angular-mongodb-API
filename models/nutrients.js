@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 const nutrientsSchema = new mongoose.Schema({
-    category: {type: String},
+  category: {type: String},
   carbs: {type: Number},
   fiber: {type: Number},
   sat: {

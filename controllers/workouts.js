@@ -16,7 +16,7 @@ export const renameAttibutes = async(req, res) => {
       };
 
     try {
-        const renamed = await Workout.updateMany(
+        await Workout.updateMany(
             {},
             { $rename: nameChanges },
             {

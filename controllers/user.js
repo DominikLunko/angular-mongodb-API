@@ -77,7 +77,9 @@ export const signup = async (req, res) => {
       password: hashedPassword,
       name: `${firstName} ${lastName}`,
     });
+    console.log(result)
     const newAnalytics = new User_analytics({ userId: result._id });
+    console.log(newAnalytics);
     await newAnalytics.save();
 
     // const {password, ...data} = await result.toJSON();
@@ -230,12 +232,6 @@ export const saveAnalytics = async (req, res) => {
   user_analytics.userId = req.userId;
   user_analytics.createdAt = new Date().toISOString();
   try {
-    /*
-    const existingAnalytics = await User_analytics.find({
-      userId: user_analytics.userId,
-    });
-    if (existingAnalytics.length > 0) {
-    */
     const updatedAnalytics = await User_analytics.updateOne(
       { userId: req.userId },
       user_analytics
@@ -245,18 +241,6 @@ export const saveAnalytics = async (req, res) => {
       message: "User analytics successfully updated",
       updatedAnalytics,
     });
-    /*
-    } else {
-      const newAnalytics = new User_analytics({ ...user_analytics });
-      await newAnalytics.save();
-
-      res.status(200).send({
-        success: true,
-        message: "User analytics successfully created",
-        newAnalytics,
-      });
-    }
-    */
   } catch (err) {
     console.log(err);
     res.send({
