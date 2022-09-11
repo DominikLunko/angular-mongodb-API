@@ -342,7 +342,7 @@ export const saveWorkoutPlan = async (req, res) => {
       }}
      ])
      let workoutPlans = result[0].workout_plans
-     const index = workoutPlans.findIndex(item => item.uniqueId == workout.uniqueId);
+     const index = workoutPlans.findIndex(item => item._id == workout._id);
       if (index == -1) {
         workoutPlans.push(workout);
       } else {
@@ -371,7 +371,7 @@ export const deleteWorkoutPlan = async (req, res) => {
 
   const updatedUserAnalytics = await User_analytics.updateOne(
     { userId: req.userId },
-    { $pull: { workout_plans: { uniqueId: workoutId } } }
+    { $pull: { workout_plans: { _id: workoutId } } }
   );
 
   if (updatedUserAnalytics) {

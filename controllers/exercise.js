@@ -78,7 +78,7 @@ export const getExerciseGroup = async (req, res) => {
         message: "Exercises fetch success",
         success: true,
         exercisesList: exercisesData[0].exercisesList,
-        metadata: exercisesData[0].metadata,
+        metadata: exercisesData[0].metadata
       });
     } else {
       res.status(200).json({
