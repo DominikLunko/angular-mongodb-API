@@ -19,7 +19,7 @@ const app = express();
 app.use(cookieParser())
 app.use(cors({
     credentials: true,
-    origin: ['http://localhost:4200']
+    origin: ['https://fitness-app-dl.netlify.app']
 }));
 
 app.use(express.json());
