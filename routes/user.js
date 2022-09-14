@@ -12,7 +12,7 @@ router.get('/signout', signout);
 router.get('/refresh-token/:userId', refreshToken);
 router.put('/update-user', updateUser);
 router.post('/save-user-analytics/:userId', saveAnalytics)
-router.get('/get-user-analytics', getUserAnalytics)
+router.get('/get-user-analytics/:userId', getUserAnalytics)
 router.patch('/:nutrientId/add-to-favourite/:userId', addToFavourite);
 router.post('/daily-calory-intake/:userId', addToDailyCaloryIntake);
 router.post('/save-workout-plan/:userId', saveWorkoutPlan)
