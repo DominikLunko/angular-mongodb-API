@@ -116,7 +116,7 @@ export const signout = async (req, res) => {
   }
 };
 export const refreshToken = async (req, res) => {
-  const userId = req.userId;
+  const userId = req.params.userId;
   try {
     const existingUser = await User.findOne({ _id: userId });
 
@@ -142,16 +142,15 @@ export const refreshToken = async (req, res) => {
 // USER PERSONAL DATA CONTROLLERS
 
 export const updateUser = async (req, res) => {
-  const userId = req.userId;
   const user = req.body;
   try {
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
+    if (!mongoose.Types.ObjectId.isValid(user._id)) {
       return res.status(200).send({
         success: false,
         message: "No user with that ID",
       });
     }
-    const updatedUser = await User.findByIdAndUpdate(userId, user, {
+    const updatedUser = await User.findByIdAndUpdate(user._id, user, {
       new: true,
     });
     res.status(200).send({
@@ -178,7 +177,7 @@ export const getUserAnalytics = async (req, res) => {
     */
     const analytics = await User_analytics.aggregate([
       {
-        $match: { userId: req.userId },
+        $match: { userId: req.params.userId },
       },
       {
         $lookup: {
@@ -229,7 +228,7 @@ export const getUserAnalytics = async (req, res) => {
 
 export const saveAnalytics = async (req, res) => {
   let user_analytics = req.body;
-  user_analytics.userId = req.userId;
+  user_analytics.userId = req.params.userId;
   user_analytics.createdAt = new Date().toISOString();
   try {
     const updatedAnalytics = await User_analytics.updateOne(
@@ -250,9 +249,9 @@ export const saveAnalytics = async (req, res) => {
   }
 };
 export const addToFavourite = async (req, res) => {
-  const { nutrientId } = req.params;
+  const { nutrientId, userId } = req.params;
 
-  const userAnalytics = await User_analytics.find({ userId: req.userId });
+  const userAnalytics = await User_analytics.find({ userId: userId });
 
   let favouriteNutrients = [];
 
@@ -269,7 +268,7 @@ export const addToFavourite = async (req, res) => {
     );
   }
   const updatedUserAnalytics = await User_analytics.updateOne(
-    { userId: req.userId },
+    { userId: userId },
     { favourite_nutrients: favouriteNutrients }
   );
 
@@ -291,7 +290,7 @@ export const addToDailyCaloryIntake = async (req, res) => {
   const { calories, todayDate } = req.body;
   // const checkTodayDate = new Date().toISOString().split("T")[0];
   try {
-    const analytics = await User_analytics.find({ userId: req.userId });
+    const analytics = await User_analytics.find({ userId: req.params.userId });
     let dailyCaloryIntake = [];
     if (analytics[0].daily_calory_intake.length > 0) {
       dailyCaloryIntake = analytics[0].daily_calory_intake;
@@ -308,7 +307,7 @@ export const addToDailyCaloryIntake = async (req, res) => {
       });
     }
     const updatedUserAnalytics = await User_analytics.updateOne(
-      { userId: req.userId },
+      { userId: req.params.userId },
       { daily_calory_intake: dailyCaloryIntake }
     );
     if (updatedUserAnalytics) {
@@ -335,7 +334,7 @@ export const saveWorkoutPlan = async (req, res) => {
   const { workout } = req.body;
   try {
      const result = await User_analytics.aggregate([
-      {$match: {userId: req.userId}},
+      {$match: {userId: req.params.userId}},
       {$project: {
         _id: 0,
         workout_plans: 1
@@ -349,7 +348,7 @@ export const saveWorkoutPlan = async (req, res) => {
         workoutPlans[index] = JSON.parse(JSON.stringify(workout));
       }
      await User_analytics.updateOne(
-      { userId: req.userId },
+      { userId: req.params.userId },
       {workout_plans: workoutPlans}
     );
   
@@ -366,11 +365,11 @@ export const saveWorkoutPlan = async (req, res) => {
 };
 
 export const deleteWorkoutPlan = async (req, res) => {
-  const { workoutId } = req.params;
+  const { workoutId, userId } = req.params;
   console.log(workoutId);
 
   const updatedUserAnalytics = await User_analytics.updateOne(
-    { userId: req.userId },
+    { userId: userId },
     { $pull: { workout_plans: { _id: workoutId } } }
   );
 
