@@ -142,15 +142,16 @@ export const refreshToken = async (req, res) => {
 // USER PERSONAL DATA CONTROLLERS
 
 export const updateUser = async (req, res) => {
+  // const userId = req.userId;
   const user = req.body;
   try {
-    if (!mongoose.Types.ObjectId.isValid(user._id)) {
+    if (!mongoose.Types.ObjectId.isValid(user._id)) { // userId
       return res.status(200).send({
         success: false,
         message: "No user with that ID",
       });
     }
-    const updatedUser = await User.findByIdAndUpdate(user._id, user, {
+    const updatedUser = await User.findByIdAndUpdate(user._id, user, { // userId
       new: true,
     });
     res.status(200).send({
@@ -232,7 +233,7 @@ export const saveAnalytics = async (req, res) => {
   user_analytics.createdAt = new Date().toISOString();
   try {
     const updatedAnalytics = await User_analytics.updateOne(
-      { userId: req.userId },
+      { userId: req.params.userId },
       user_analytics
     );
     res.status(200).send({
